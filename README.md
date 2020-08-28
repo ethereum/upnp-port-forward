@@ -48,7 +48,7 @@ Show flake8 errors on file change:
 
 ```sh
 # Test flake8
-when-changed -v -s -r -1 upnp-port-forward/ tests/ -c "clear; flake8 upnp-port-forward tests && echo 'flake8 success' || echo 'error'"
+when-changed -v -s -r -1 upnp_port_forward/ tests/ -c "clear; flake8 upnp_port_forward tests && echo 'flake8 success' || echo 'error'"
 ```
 
 Run multi-process tests in one command, but without color:
@@ -64,7 +64,7 @@ Run in one thread, with color and desktop notifications:
 
 ```sh
 cd venv
-ptw --onfail "notify-send -t 5000 'Test failure ⚠⚠⚠⚠⚠' 'python 3 test on upnp-port-forward failed'" ../tests ../upnp-port-forward
+ptw --onfail "notify-send -t 5000 'Test failure ⚠⚠⚠⚠⚠' 'python 3 test on upnp-port-forward failed'" ../tests ../upnp_port_forward
 ```
 
 ### Release setup

@@ -1,4 +1,4 @@
 
 
 def test_import():
-    import upnp-port-forward  # noqa: F401
+    import upnp_port_forward  # noqa: F401
