@@ -47,7 +47,7 @@ with open('./README.md') as readme:
 setup(
     name='upnp-port-forward',
     # *IMPORTANT*: Don't manually change the version here. Use `make bump`, as described in readme
-    version='0.1.0-alpha.0',
+    version='0.1.1',
     description="""upnp-port-forward: UPnP port forwarding for humans""",
     long_description=long_description,
     long_description_content_type='text/markdown',
