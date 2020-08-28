@@ -9,7 +9,7 @@ Contents
 .. toctree::
     :maxdepth: 3
 
-    upnp-port-forward
+    upnp_port_forward
     release_notes
 
 

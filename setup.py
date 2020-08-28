@@ -55,7 +55,10 @@ setup(
     author_email='snakecharmers@ethereum.org',
     url='https://github.com/ethereum/upnp-port-forward',
     include_package_data=True,
-    install_requires=[],
+    install_requires=[
+        "netifaces>=0.10.9,<0.11",
+        "upnpclient>=0.0.8,<1",
+    ],
     python_requires='>=3.6, <4',
     extras_require=extras_require,
     py_modules=['upnp_port_forward'],
@@ -63,6 +66,7 @@ setup(
     zip_safe=False,
     keywords='ethereum',
     packages=find_packages(exclude=["tests", "tests.*"]),
+    package_data={'upnp_port_forward': ['py.typed']},
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

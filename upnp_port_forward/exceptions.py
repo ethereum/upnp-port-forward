@@ -1,0 +1,2 @@
+class PortMapFailed(Exception):
+    pass
