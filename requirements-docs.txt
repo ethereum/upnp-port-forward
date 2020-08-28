@@ -1,1 +1,1 @@
-<PYPI_NAME>[doc]
+upnp-port-forward[doc]

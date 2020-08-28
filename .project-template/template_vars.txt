@@ -1,6 +1,6 @@
-<MODULE_NAME>
-<PYPI_NAME>
-<REPO_NAME>
-<RTD_NAME>
-<PROJECT_NAME>
-<SHORT_DESCRIPTION>
+upnp-port-forward
+upnp-port-forward
+upnp-port-forward
+upnp-port-forward
+UPnP Port Forward
+UPnP port forwarding for humans
