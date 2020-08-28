@@ -28,6 +28,7 @@ lint:
 
 lint-roll:
 	isort --recursive upnp_port_forward tests
+	black upnp_port_forward tests
 	$(MAKE) lint
 
 test:
