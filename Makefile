@@ -27,7 +27,7 @@ lint:
 	tox -elint
 
 lint-roll:
-	isort --recursive <MODULE_NAME> tests
+	isort --recursive upnp_port_forward tests
 	$(MAKE) lint
 
 test:

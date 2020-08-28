@@ -1,7 +1,7 @@
-<PROJECT_NAME>
+UPnP Port Forward
 ==============================
 
-<SHORT_DESCRIPTION>
+UPnP port forwarding for humans
 
 Contents
 --------
@@ -9,7 +9,7 @@ Contents
 .. toctree::
     :maxdepth: 3
 
-    <MODULE_NAME>
+    upnp-port-forward
     release_notes
 
 
