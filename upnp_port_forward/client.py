@@ -100,6 +100,7 @@ WAN_SERVICE_NAMES = (
     "WANIPConn1",
     "WANIPConnection.1",  # Nighthawk C7800
     "WANPPPConnection.1",  # CenturyLink C1100Z
+    "WANPPPConn1",  # Huawei B528s-23a
 )
 
 
