@@ -1,12 +1,12 @@
 import ipaddress
 import logging
-from typing import Tuple
+from typing import NamedTuple, Tuple
 from urllib.parse import urlparse
 
 import netifaces
 import upnpclient
 
-from .exceptions import PortMapFailed
+from .exceptions import NoPortMapServiceFound, PortMapFailed
 from .typing import AnyIPAddress
 
 
@@ -27,8 +27,16 @@ DEFAULT_PORTMAP_DURATION = 30 * 60  # 30 minutes
 logger = logging.getLogger("upnp_port_forward")
 
 
+WAN_SERVICE_NAMES: Tuple[str, ...] = (
+    "WANIPConn1",
+    "WANIPConnection.1",  # Nighthawk C7800
+    "WANPPPConnection.1",  # CenturyLink C1100Z
+    "WANPPPConn1",  # Huawei B528s-23a
+)
+
+
 def setup_port_map(
-    port: int, duration: int = DEFAULT_PORTMAP_DURATION
+    port: int, duration: int = DEFAULT_PORTMAP_DURATION, wan_service_name: str = None
 ) -> Tuple[AnyIPAddress, AnyIPAddress]:
     """
     Set up the port mapping
@@ -38,6 +46,16 @@ def setup_port_map(
     devices = upnpclient.discover()
     if not devices:
         raise PortMapFailed("No UPnP devices available")
+
+    if wan_service_name:
+        if wan_service_name.startswith("WAN"):
+            global WAN_SERVICE_NAMES
+            WAN_SERVICE_NAMES = WAN_SERVICE_NAMES + (wan_service_name,)
+        else:
+            logger.info(
+                "Provided wan service '%s' is not valid: must start with WAN",
+                wan_service_name,
+            )
 
     for upnp_dev in devices:
         try:
@@ -77,6 +95,41 @@ def setup_port_map(
     return ipaddress.ip_address(internal_ip), ipaddress.ip_address(external_ip)
 
 
+class UPnPServiceNames(NamedTuple):
+    device_friendly_name: str
+    device_location: str
+    service_names: Tuple[str, ...]
+
+
+def fetch_AddPortMapping_services() -> Tuple[UPnPServiceNames, ...]:
+    """
+    :return: returns the available devices and services for which the action 'AddPortMapping' exists
+    """
+    devices = upnpclient.discover()
+    if not devices:
+        raise NoPortMapServiceFound("No UPnP devices available")
+
+    services_with_AddPortMapping = []
+    for upnp_dev in devices:
+        service_names = []
+        for service in upnp_dev.services:
+            try:
+                service["AddPortMapping"]
+            except KeyError:
+                continue
+            else:
+                service_names.append(service.name)
+
+        if len(service_names) > 0:
+            services_with_AddPortMapping.append(
+                UPnPServiceNames(
+                    upnp_dev.friendly_name, upnp_dev.location, tuple(service_names)
+                )
+            )
+
+    return tuple(services_with_AddPortMapping)
+
+
 def _find_internal_ip_on_device_network(upnp_dev: upnpclient.upnp.Device) -> str:
     """
     For a given UPnP device, return the internal IP address of this host machine that can
@@ -94,14 +147,6 @@ def _find_internal_ip_on_device_network(upnp_dev: upnpclient.upnp.Device) -> str
                 if ipaddress.ip_address(item["addr"]) in upnp_dev_net:
                     return str(item["addr"])
     raise _NoInternalAddressMatchesDevice(parsed_url.hostname)
-
-
-WAN_SERVICE_NAMES = (
-    "WANIPConn1",
-    "WANIPConnection.1",  # Nighthawk C7800
-    "WANPPPConnection.1",  # CenturyLink C1100Z
-    "WANPPPConn1",  # Huawei B528s-23a
-)
 
 
 def _get_wan_service(upnp_dev: upnpclient.upnp.Device) -> upnpclient.upnp.Service:
