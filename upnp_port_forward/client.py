@@ -1,6 +1,6 @@
 import ipaddress
 import logging
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Optional, Tuple
 from urllib.parse import urlparse
 
 import netifaces
@@ -48,10 +48,8 @@ def setup_port_map(
         raise PortMapFailed("No UPnP devices available")
 
     if wan_service_name:
-        if wan_service_name.startswith("WAN"):
-            global WAN_SERVICE_NAMES
-            WAN_SERVICE_NAMES = WAN_SERVICE_NAMES + (wan_service_name,)
-        else:
+        if not wan_service_name.startswith("WAN"):
+            wan_service_name = None
             logger.info(
                 "Provided wan service '%s' is not valid: must start with WAN",
                 wan_service_name,
@@ -59,7 +57,9 @@ def setup_port_map(
 
     for upnp_dev in devices:
         try:
-            internal_ip, external_ip = _setup_device_port_map(upnp_dev, port, duration)
+            internal_ip, external_ip = _setup_device_port_map(
+                upnp_dev, port, duration, wan_service_name,
+            )
             logger.info(
                 "NAT port forwarding successfully set up: internal=%s:%d external=%s:%d",
                 internal_ip,
@@ -81,7 +81,7 @@ def setup_port_map(
             continue
         except PortMapFailed:
             logger.debug(
-                "Failed to setup portmap on UPnP divec at %s",
+                "Failed to setup portmap on UPnP device at %s",
                 upnp_dev.location,
                 exc_info=True,
             )
@@ -149,8 +149,16 @@ def _find_internal_ip_on_device_network(upnp_dev: upnpclient.upnp.Device) -> str
     raise _NoInternalAddressMatchesDevice(parsed_url.hostname)
 
 
-def _get_wan_service(upnp_dev: upnpclient.upnp.Device) -> upnpclient.upnp.Service:
-    for service_name in WAN_SERVICE_NAMES:
+def _get_wan_service(
+    upnp_dev: upnpclient.upnp.Device, wan_service_name: Optional[str]
+) -> upnpclient.upnp.Service:
+
+    if wan_service_name:
+        all_wan_service_names = (wan_service_name,) + WAN_SERVICE_NAMES
+    else:
+        all_wan_service_names = WAN_SERVICE_NAMES
+
+    for service_name in all_wan_service_names:
         try:
             return upnp_dev[service_name]
         except KeyError:
@@ -160,10 +168,14 @@ def _get_wan_service(upnp_dev: upnpclient.upnp.Device) -> upnpclient.upnp.Servic
 
 
 def _setup_device_port_map(
-    upnp_dev: upnpclient.upnp.Device, port: int, duration: int
+    upnp_dev: upnpclient.upnp.Device,
+    port: int,
+    duration: int,
+    wan_service_name: Optional[str],
 ) -> Tuple[str, str]:
+
     internal_ip = _find_internal_ip_on_device_network(upnp_dev)
-    wan_service = _get_wan_service(upnp_dev)
+    wan_service = _get_wan_service(upnp_dev, wan_service_name)
 
     external_ip = wan_service.GetExternalIPAddress()["NewExternalIPAddress"]
 
