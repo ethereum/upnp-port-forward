@@ -101,7 +101,7 @@ class UPnPServiceNames(NamedTuple):
     service_names: Tuple[str, ...]
 
 
-def fetch_AddPortMapping_services() -> Tuple[UPnPServiceNames, ...]:
+def fetch_add_portmapping_services() -> Tuple[UPnPServiceNames, ...]:
     """
     :return: returns the available devices and services for which the action 'AddPortMapping' exists
     """
@@ -126,6 +126,11 @@ def fetch_AddPortMapping_services() -> Tuple[UPnPServiceNames, ...]:
                     upnp_dev.friendly_name, upnp_dev.location, tuple(service_names)
                 )
             )
+
+    if len(services_with_AddPortMapping) <= 0:
+        raise NoPortMapServiceFound(
+            "Unable to find a device with a port mapping service"
+        )
 
     return tuple(services_with_AddPortMapping)
 
