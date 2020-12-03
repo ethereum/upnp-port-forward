@@ -1,12 +1,12 @@
 import ipaddress
 import logging
-from typing import NamedTuple, Optional, Tuple
+from typing import Optional, Tuple
 from urllib.parse import urlparse
 
 import netifaces
 import upnpclient
 
-from .exceptions import NoPortMapServiceFound, PortMapFailed
+from .exceptions import PortMapFailed
 from .typing import AnyIPAddress
 
 
@@ -36,7 +36,9 @@ WAN_SERVICE_NAMES: Tuple[str, ...] = (
 
 
 def setup_port_map(
-    port: int, duration: int = DEFAULT_PORTMAP_DURATION, wan_service_name: str = None
+    port: int,
+    duration: int = DEFAULT_PORTMAP_DURATION,
+    wan_service_names: Optional[Tuple[str, ...]] = None,
 ) -> Tuple[AnyIPAddress, AnyIPAddress]:
     """
     Set up the port mapping
@@ -47,18 +49,10 @@ def setup_port_map(
     if not devices:
         raise PortMapFailed("No UPnP devices available")
 
-    if wan_service_name:
-        if not wan_service_name.startswith("WAN"):
-            wan_service_name = None
-            logger.info(
-                "Provided wan service '%s' is not valid: must start with WAN",
-                wan_service_name,
-            )
-
     for upnp_dev in devices:
         try:
             internal_ip, external_ip = _setup_device_port_map(
-                upnp_dev, port, duration, wan_service_name,
+                upnp_dev, port, duration, wan_service_names,
             )
             logger.info(
                 "NAT port forwarding successfully set up: internal=%s:%d external=%s:%d",
@@ -95,46 +89,6 @@ def setup_port_map(
     return ipaddress.ip_address(internal_ip), ipaddress.ip_address(external_ip)
 
 
-class UPnPServiceNames(NamedTuple):
-    device_friendly_name: str
-    device_location: str
-    service_names: Tuple[str, ...]
-
-
-def fetch_add_portmapping_services() -> Tuple[UPnPServiceNames, ...]:
-    """
-    :return: returns the available devices and services for which the action 'AddPortMapping' exists
-    """
-    devices = upnpclient.discover()
-    if not devices:
-        raise NoPortMapServiceFound("No UPnP devices available")
-
-    services_with_AddPortMapping = []
-    for upnp_dev in devices:
-        service_names = []
-        for service in upnp_dev.services:
-            try:
-                service["AddPortMapping"]
-            except KeyError:
-                continue
-            else:
-                service_names.append(service.name)
-
-        if len(service_names) > 0:
-            services_with_AddPortMapping.append(
-                UPnPServiceNames(
-                    upnp_dev.friendly_name, upnp_dev.location, tuple(service_names)
-                )
-            )
-
-    if len(services_with_AddPortMapping) <= 0:
-        raise NoPortMapServiceFound(
-            "Unable to find a device with a port mapping service"
-        )
-
-    return tuple(services_with_AddPortMapping)
-
-
 def _find_internal_ip_on_device_network(upnp_dev: upnpclient.upnp.Device) -> str:
     """
     For a given UPnP device, return the internal IP address of this host machine that can
@@ -155,15 +109,13 @@ def _find_internal_ip_on_device_network(upnp_dev: upnpclient.upnp.Device) -> str
 
 
 def _get_wan_service(
-    upnp_dev: upnpclient.upnp.Device, wan_service_name: Optional[str]
+    upnp_dev: upnpclient.upnp.Device, wan_service_names: Optional[Tuple[str, ...]]
 ) -> upnpclient.upnp.Service:
 
-    if wan_service_name:
-        all_wan_service_names = (wan_service_name,) + WAN_SERVICE_NAMES
-    else:
-        all_wan_service_names = WAN_SERVICE_NAMES
-
-    for service_name in all_wan_service_names:
+    service_names_on_trial = (
+        wan_service_names if wan_service_names else WAN_SERVICE_NAMES
+    )
+    for service_name in service_names_on_trial:
         try:
             return upnp_dev[service_name]
         except KeyError:
@@ -176,11 +128,11 @@ def _setup_device_port_map(
     upnp_dev: upnpclient.upnp.Device,
     port: int,
     duration: int,
-    wan_service_name: Optional[str],
+    wan_service_names: Optional[Tuple[str, ...]],
 ) -> Tuple[str, str]:
 
     internal_ip = _find_internal_ip_on_device_network(upnp_dev)
-    wan_service = _get_wan_service(upnp_dev, wan_service_name)
+    wan_service = _get_wan_service(upnp_dev, wan_service_names)
 
     external_ip = wan_service.GetExternalIPAddress()["NewExternalIPAddress"]
 
