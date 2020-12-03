@@ -38,7 +38,7 @@ WAN_SERVICE_NAMES: Tuple[str, ...] = (
 def setup_port_map(
     port: int,
     duration: int = DEFAULT_PORTMAP_DURATION,
-    wan_service_names: Optional[Tuple[str, ...]] = None,
+    required_service_names: Optional[Tuple[str, ...]] = None,
 ) -> Tuple[AnyIPAddress, AnyIPAddress]:
     """
     Set up the port mapping
@@ -52,7 +52,7 @@ def setup_port_map(
     for upnp_dev in devices:
         try:
             internal_ip, external_ip = _setup_device_port_map(
-                upnp_dev, port, duration, wan_service_names,
+                upnp_dev, port, duration, required_service_names,
             )
             logger.info(
                 "NAT port forwarding successfully set up: internal=%s:%d external=%s:%d",
@@ -109,11 +109,11 @@ def _find_internal_ip_on_device_network(upnp_dev: upnpclient.upnp.Device) -> str
 
 
 def _get_wan_service(
-    upnp_dev: upnpclient.upnp.Device, wan_service_names: Optional[Tuple[str, ...]]
+    upnp_dev: upnpclient.upnp.Device, required_service_names: Optional[Tuple[str, ...]]
 ) -> upnpclient.upnp.Service:
 
     service_names_on_trial = (
-        wan_service_names if wan_service_names else WAN_SERVICE_NAMES
+        required_service_names if required_service_names else WAN_SERVICE_NAMES
     )
     for service_name in service_names_on_trial:
         try:
@@ -128,11 +128,11 @@ def _setup_device_port_map(
     upnp_dev: upnpclient.upnp.Device,
     port: int,
     duration: int,
-    wan_service_names: Optional[Tuple[str, ...]],
+    required_service_names: Optional[Tuple[str, ...]],
 ) -> Tuple[str, str]:
 
     internal_ip = _find_internal_ip_on_device_network(upnp_dev)
-    wan_service = _get_wan_service(upnp_dev, wan_service_names)
+    wan_service = _get_wan_service(upnp_dev, required_service_names)
 
     external_ip = wan_service.GetExternalIPAddress()["NewExternalIPAddress"]
 
