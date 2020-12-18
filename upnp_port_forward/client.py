@@ -112,10 +112,10 @@ def _get_wan_service(
     upnp_dev: upnpclient.upnp.Device, required_service_names: Optional[Tuple[str, ...]]
 ) -> upnpclient.upnp.Service:
 
-    service_names_on_trial = (
+    candidate_service_names = (
         required_service_names if required_service_names else WAN_SERVICE_NAMES
     )
-    for service_name in service_names_on_trial:
+    for service_name in candidate_service_names:
         try:
             return upnp_dev[service_name]
         except KeyError:

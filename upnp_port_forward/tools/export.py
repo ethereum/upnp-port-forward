@@ -46,38 +46,47 @@ def fetch_add_portmapping_services() -> Tuple[UPnPServiceNames, ...]:
     return tuple(services_with_AddPortMapping)
 
 
+def output_upnp_service_names(
+    upnp_service_names_by_device: Tuple[UPnPServiceNames, ...]
+) -> None:
+    service_names_output = [
+        f"\n{'-' * 40}",
+    ]
+    for service in upnp_service_names_by_device:
+        service_names_output.extend(
+            [
+                f"Device Name:     {service.device_friendly_name}",
+                f"Device Location: {service.device_location}",
+                "Available UPnP services found on this device:",
+            ]
+        )
+        service_names_output.extend(
+            [f"  {service_name}" for service_name in service.service_names]
+        )
+        service_names_output.append("")
+
+    service_names_output.extend(
+        [
+            "You can now try to launch upnp_port_forward.client.setup_port_map()",
+            "with required_service_names=(<service name>, ...)",
+            "To help this library supports more routers, you can submit new service names",
+            "here: https://github.com/ethereum/upnp-port-forward/issues - Thanks !!",
+        ]
+    )
+
+    logger = logging.getLogger("upnp_port_forward.tools.export")
+    logging.basicConfig(level=logging.INFO)
+    logger.info("\n".join(service_names_output))
+
+
 def main() -> None:
     logger = logging.getLogger("upnp_port_forward.tools.export")
     try:
         upnp_service_names_by_device = fetch_add_portmapping_services()
-        service_names_output = "\n"
-        for service in upnp_service_names_by_device:
-            service_names_output = service_names_output.join(
-                [
-                    f"\n{'-' * 40}",
-                    f"Device Name: {service.device_friendly_name}",
-                    f"Device Location: {service.device_location}",
-                    "Available UPnP services found on this device:",
-                    "\n".join(
-                        f"    {service_name}" for service_name in service.service_names
-                    ),
-                ]
-            )
-        service_names_output = "\n".join(
-            [
-                service_names_output,
-                "You can now try to launch upnp_port_forward.client.setup_port_map()",
-                "with required_service_names=(<service name>, ...)",
-                "To help this library supports more routers, you can submit new service names",
-                "here: https://github.com/ethereum/upnp-port-forward/issues - Thanks !!",
-            ]
-        )
-
-        logging.basicConfig(level=logging.INFO)
-        logger.info(service_names_output)
-
     except NoPortMapServiceFound:
         logger.error("No port mapping services found")
+    else:
+        output_upnp_service_names(upnp_service_names_by_device)
 
 
 if __name__ == "__main__":
